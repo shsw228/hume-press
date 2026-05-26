@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
 
 export async function GET(context: APIContext) {
-  const articles = (await getCollection('articles', ({ data }) => !data.draft))
+  const articles = (await getCollection('articles', ({ data }) => import.meta.env.DEV || !data.draft))
     .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
   const base = import.meta.env.BASE_URL;

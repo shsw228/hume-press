@@ -9,12 +9,12 @@ const articles = (await getCollection('articles', ({ data }) => !data.draft))
 
 const recent = articles.slice(0, RECENT_COUNT);
 
-const fmt = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 const base = import.meta.env.BASE_URL;
 ---
-<BaseLayout title="hume.com" description="個人技術ブログ">
+<BaseLayout title="hume.com" description="Personal tech blog">
   <section>
-    <h2 class="text-lg font-bold mb-4">最近の記事</h2>
+    <h2 class="text-lg font-bold mb-4">Recent</h2>
     <ul class="space-y-4">
       {recent.map((article) => (
         <li>
@@ -29,7 +29,7 @@ const base = import.meta.env.BASE_URL;
       ))}
     </ul>
     <p class="mt-8 text-sm">
-      <a href={`${base}articles/`} class="hover:underline">→ 記事一覧 ({articles.length}件)</a>
+      <a href={`${base}articles/`} class="hover:underline">See all ({articles.length})</a>
     </p>
   </section>
 </BaseLayout>

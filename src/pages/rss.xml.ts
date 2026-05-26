@@ -9,7 +9,7 @@ export async function GET(context: APIContext) {
   const base = import.meta.env.BASE_URL;
   return rss({
     title: 'hume.com',
-    description: 'shsw228 の技術ブログ',
+    description: "shsw228's tech blog",
     site: context.site ?? 'https://example.com',
     items: articles.map((article) => ({
       title: article.data.title,

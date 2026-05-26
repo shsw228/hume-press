@@ -13,7 +13,7 @@ export async function getStaticPaths() {
 const { article } = Astro.props;
 const { Content } = await render(article);
 
-const fmt = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 const base = import.meta.env.BASE_URL;
 ---
 <BaseLayout title={article.data.title} description={article.data.description}>
@@ -21,7 +21,7 @@ const base = import.meta.env.BASE_URL;
     <header class="mb-8">
       <div class="text-xs text-[color:var(--fg-muted)]">
         {fmt.format(article.data.pubDate)}
-        {article.data.updatedDate && ` · 更新 ${fmt.format(article.data.updatedDate)}`}
+        {article.data.updatedDate && ` · updated ${fmt.format(article.data.updatedDate)}`}
       </div>
       <h1 class="text-2xl font-bold mt-1">{article.data.title}</h1>
       {article.data.tags.length > 0 && (
@@ -34,7 +34,7 @@ const base = import.meta.env.BASE_URL;
       <Content />
     </div>
     <p class="mt-12 text-sm">
-      <a href={base} class="hover:underline">← 一覧に戻る</a>
+      <a href={base} class="hover:underline">← Back to articles</a>
     </p>
   </article>
 </BaseLayout>

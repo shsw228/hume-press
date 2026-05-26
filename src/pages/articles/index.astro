@@ -5,11 +5,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 const articles = (await getCollection('articles', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
-const fmt = new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+const fmt = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 const base = import.meta.env.BASE_URL;
 ---
-<BaseLayout title="記事一覧" description="hume.com の全記事一覧">
-  <h1 class="text-2xl font-bold mb-6">記事一覧</h1>
+<BaseLayout title="Articles" description="All articles on hume.com">
+  <h1 class="text-2xl font-bold mb-6">Articles</h1>
   <ul class="space-y-4">
     {articles.map((article) => (
       <li>

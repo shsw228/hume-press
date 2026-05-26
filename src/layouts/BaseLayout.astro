@@ -28,7 +28,7 @@ const base = import.meta.env.BASE_URL;
       <div class="max-w-2xl mx-auto px-4 py-5 flex items-baseline justify-between">
         <a href={base} class="font-bold text-lg">{siteTitle}</a>
         <nav class="text-sm space-x-4">
-          <a href={base} class="hover:underline">articles</a>
+          <a href={`${base}articles/`} class="hover:underline">articles</a>
           <a href={`${base}rss.xml`} class="hover:underline">rss</a>
         </nav>
       </div>

@@ -8,8 +8,9 @@ import config from "@/config";
 export const BLOG_PATH =
   process.env.ARTICLES_DIR ?? "../hume.com/articles";
 
-// 旧スキーマ (pubDate / updatedDate) と AstroPaper スキーマ (pubDatetime / modDatetime)
-// のどちらの記事も受け入れられるようにする。
+// 旧スキーマ (pubDate / updatedDate) を AstroPaper スキーマ (pubDatetime / modDatetime)
+// にマップする。YAML は bare YYYY-MM-DD を UTC 0:00 の Date として読むため、
+// 厳密にローカル日付として扱いたい場合はタイムゾーン付き ISO 形式で書く。
 const preprocessFrontmatter = (raw: unknown) => {
   if (raw && typeof raw === "object") {
     const r = raw as Record<string, unknown>;

@@ -1,0 +1,39 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { getCollection } from "astro:content";
+import Socials from "./Socials.astro";
+import { useTranslations } from "@/i18n";
+import { postFilter } from "@/utils/postFilter";
+import config from "@/config";
+
+type Props = {
+  noMarginTop?: boolean;
+} & HTMLAttributes<"footer">;
+
+const { noMarginTop = false, class: className, ...attrs } = Astro.props;
+
+const t = useTranslations(Astro.currentLocale);
+const currentYear = new Date().getFullYear();
+
+// Copyright のレンジは「最古記事の年」〜「現在年」。記事がなければ現在年だけ。
+const posts = await getCollection("posts", postFilter);
+const earliestYear = posts.length
+  ? Math.min(...posts.map(p => p.data.pubDatetime.getFullYear()))
+  : currentYear;
+const yearLabel =
+  earliestYear === currentYear ? `${currentYear}` : `${earliestYear}–${currentYear}`;
+---
+
+<footer
+  class:list={["app-layout", { "mt-auto": !noMarginTop }, className]}
+  {...attrs}
+>
+  <div
+    class="border-border flex flex-col items-center justify-between border-t py-6 sm:flex-row-reverse sm:py-4"
+  >
+    <Socials />
+    <div class="my-2 flex flex-col items-center whitespace-nowrap sm:flex-row">
+      <span>&#169; {yearLabel} {config.site.author}</span>
+    </div>
+  </div>
+</footer>

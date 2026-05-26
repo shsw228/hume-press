@@ -1,50 +1,37 @@
 @import "tailwindcss";
+@import "./theme.css";
+@import "./typography.css";
 
-:root {
-  --fg: #111;
-  --fg-muted: #666;
-  --bg: #fafafa;
-  --accent: #2563eb;
-}
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fg: #e5e5e5;
-    --fg-muted: #999;
-    --bg: #0f0f0f;
-    --accent: #60a5fa;
+@layer base {
+  * {
+    @apply border-border outline-accent/75;
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-muted) transparent;
+  }
+  a,
+  button {
+    @apply outline-accent outline-offset-1 focus-visible:no-underline focus-visible:outline-2 focus-visible:outline-dashed;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
-html {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+@utility max-w-app {
+  @apply max-w-3xl;
 }
 
-.prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.prose h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.6rem; }
-.prose h3 { font-size: 1.15rem; font-weight: 700; margin-top: 1.4rem; margin-bottom: 0.4rem; }
-.prose p { margin: 0.8rem 0; line-height: 1.85; }
-.prose ul { list-style: disc; padding-left: 1.4rem; margin: 0.8rem 0; }
-.prose ol { list-style: decimal; padding-left: 1.4rem; margin: 0.8rem 0; }
-.prose code:not(pre code) {
-  background: color-mix(in srgb, var(--fg) 8%, transparent);
-  padding: 0.1em 0.35em;
-  border-radius: 0.25rem;
-  font-size: 0.9em;
+@utility app-layout {
+  @apply max-w-app mx-auto w-full px-4;
 }
-.prose pre {
-  background: color-mix(in srgb, var(--fg) 6%, transparent);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 1rem 0;
+
+@utility active-nav {
+  @apply underline decoration-wavy decoration-2 underline-offset-8;
 }
-.prose img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 1rem 0; }
-.prose blockquote {
-  border-left: 3px solid color-mix(in srgb, var(--fg) 30%, transparent);
-  padding-left: 1rem;
-  color: var(--fg-muted);
-  margin: 1rem 0;
+
+:target {
+  scroll-margin-block: 1rem;
 }

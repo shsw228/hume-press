@@ -1,21 +1,22 @@
-import rss from '@astrojs/rss';
-import { getCollection } from 'astro:content';
-import type { APIContext } from 'astro';
+import rss from "@astrojs/rss";
+import { getCollection } from "astro:content";
+import { getSortedPosts } from "@/utils/getSortedPosts";
+import { getPostUrl } from "@/utils/getPostPaths";
+import config from "@/config";
 
-export async function GET(context: APIContext) {
-  const articles = (await getCollection('articles', ({ data }) => import.meta.env.DEV || !data.draft))
-    .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+export async function GET() {
+  const posts = await getCollection("posts");
+  const sortedPosts = getSortedPosts(posts);
 
-  const base = import.meta.env.BASE_URL;
   return rss({
-    title: 'hume.com',
-    description: "shsw228's tech blog",
-    site: context.site ?? 'https://example.com',
-    items: articles.map((article) => ({
-      title: article.data.title,
-      description: article.data.description,
-      pubDate: article.data.pubDate,
-      link: `${base}articles/${article.id}/`,
+    title: config.site.title,
+    description: config.site.description,
+    site: config.site.url,
+    items: sortedPosts.map(({ data, id, filePath }) => ({
+      link: getPostUrl(id, filePath, config.site.lang),
+      title: data.title,
+      description: data.description,
+      pubDate: new Date(data.modDatetime ?? data.pubDatetime),
     })),
   });
 }

@@ -1,13 +1,13 @@
 # hume-press
 
-技術ブログの実装リポジトリ。記事原稿は [shsw228/hume.com](https://github.com/shsw228/hume.com) にあり、ビルド時に取り込まれる。
+技術ブログの実装リポジトリ。記事原稿は [shsw228/hume.com](https://github.com/shsw228/hume.com) にあり、配信もそちらの GitHub Pages から行われる。本リポジトリは Astro のソースコードだけを持つ「素材置き場」で、Pages 配信は行わない。
 
 ## 構成
 
 - フレームワーク: [Astro](https://astro.build/) + Tailwind CSS v4
-- 記事のロード: Astro Content Layer の `glob` ローダーで外部ディレクトリを参照
-- ホスト: GitHub Pages（`https://shsw228.github.io/hume-press/`）
-- ビルドトリガー: 記事リポジトリの push → `repository_dispatch` で本リポジトリの Actions を起動
+- 記事のロード: Astro Content Layer の `glob` ローダーで外部ディレクトリ（`../hume.com/articles`）を参照
+- 公開URL: `https://shsw228.github.io/hume.com/`（配信は hume.com 側のActionsから）
+- 実装更新時の連携: 本リポジトリ `main` への push → `dispatch.yml` が `repository_dispatch` を `shsw228/hume.com` に投げてビルドをキック
 
 ## ローカル開発
 
@@ -30,23 +30,12 @@ npm run dev
 ARTICLES_DIR=/path/to/articles npm run dev
 ```
 
-## デプロイ
+## 必要なシークレット
 
-GitHub Actions の `deploy.yml` が以下のいずれかでトリガーされる:
+- `DISPATCH_TOKEN`: `shsw228/hume.com` に `repository_dispatch` を投げる fine-grained PAT。
+  - Repository access: `shsw228/hume.com` のみ
+  - Permissions: `Contents: Read and write`, `Metadata: Read`
 
-- 実装側 `main` への push
-- 記事側からの `repository_dispatch`（`event-type: articles-updated`）
-- 手動 `workflow_dispatch`
+## 独自ドメインへの切り替え
 
-ジョブは記事リポジトリを `hume.com` ディレクトリに checkout し、Astro でビルドして `actions/deploy-pages` で GitHub Pages に配信する。
-
-### リポジトリ設定
-
-- Settings → Pages → Source を **GitHub Actions** に設定する。
-- 独自ドメインに切り替える場合は `astro.config.mjs` の `SITE_URL` を環境変数か直書きで変更し、`BASE_PATH` を空文字にする。`public/CNAME` も忘れずに置く。
-
-### 必要なシークレット
-
-- `ARTICLES_TOKEN`: 記事リポジトリを checkout するための PAT（記事が private のときのみ。public なら不要）
-
-GitHub Pages の配信自体は `GITHUB_TOKEN` で動くので追加シークレットは不要。
+`astro.config.mjs` の `SITE_URL` を実ドメインに、`BASE_PATH` を空文字に変更し、`hume.com` 側に `public/CNAME` を置く。

@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import { getRelativeLocaleUrl } from "astro:i18n";
+import { getAssetPath } from "@/utils/withBase";
 import IconRss from "@/assets/icons/IconRss.svg";
 import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
 import Layout from "@/layouts/Layout.astro";
@@ -40,7 +41,7 @@ const homePath = getRelativeLocaleUrl(locale, "");
       </h1>
       <a
         target="_blank"
-        href={getRelativeLocaleUrl(locale, "rss.xml")}
+        href={getAssetPath("rss.xml")}
         class="inline-block"
         aria-label="RSS Feed"
         title="RSS Feed"

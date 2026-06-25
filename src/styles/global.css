@@ -35,3 +35,79 @@
 :target {
   scroll-margin-block: 1rem;
 }
+
+/* remark-link-card */
+.rlc-container {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  margin-block: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  text-decoration: none !important;
+  color: var(--foreground);
+  transition: background-color 0.2s ease;
+}
+
+.rlc-container:hover {
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
+.rlc-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+}
+
+.rlc-title {
+  font-weight: 600;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rlc-description {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rlc-url-container {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.rlc-favicon {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.rlc-image-container {
+  flex-shrink: 0;
+  display: flex;
+  width: 14rem;
+  max-width: 42%;
+  /* ヘッダーと同じ sm ブレークポイント (Tailwind の max-sm) で OGP を隠す */
+  @apply max-sm:hidden;
+}
+
+.rlc-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+}

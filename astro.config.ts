@@ -9,6 +9,7 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import remarkToc from "remark-toc";
 import remarkCollapse from "remark-collapse";
+import remarkLinkCard from "remark-link-card";
 import {
   transformerNotationDiff,
   transformerNotationHighlight,
@@ -39,7 +40,11 @@ export default defineConfig({
     },
   },
   markdown: {
-    remarkPlugins: [remarkToc, [remarkCollapse, { test: "Table of contents" }]],
+    remarkPlugins: [
+      remarkToc,
+      [remarkCollapse, { test: "Table of contents" }],
+      [remarkLinkCard, { cache: false, shortenUrl: true }],
+    ],
     shikiConfig: {
       themes: { light: "min-light", dark: "night-owl" },
       defaultColor: false,

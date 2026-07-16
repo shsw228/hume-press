@@ -1,54 +1,33 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
-import Main from "@/components/Main.astro";
-import Footer from "@/components/Footer.astro";
-import config from "@/config";
-
-const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
+// 汎用 glTF(GLB) ビューア。three.js + Tweakpane。
+// src: BASE_URL からの相対パス (例 "models/desk-mount.glb")。
+// 1ページ1インスタンス想定 (id="viewer")。
+interface Props {
+  src: string;
+  ariaLabel?: string;
+}
+const { src, ariaLabel = "3D モデル" } = Astro.props;
+const modelUrl = import.meta.env.BASE_URL + src;
 ---
 
-<Layout
-  title={`Desk Mac Mini Mount | ${config.site.title}`}
-  description="机下に Mac Mini を吊る VESA マウントと変換ブラケットの 3D モデル。ブラウザ上で回転・ズーム・ライト調整ができます。"
+<div
+  id="viewer"
+  data-src={modelUrl}
+  class="border-border bg-background not-prose relative w-full overflow-hidden rounded-lg border"
+  style="aspect-ratio: 16 / 10;"
+  role="img"
+  aria-label={ariaLabel}
 >
-  <Header />
-  <Breadcrumb />
-  <Main pageTitle="Desk Mac Mini Mount">
-    <p class="mb-4">
-      クラムシェル運用の Mac Mini を机裏に吊るための VESA ホルダーと、机の M8
-      タップ穴へ固定する変換ブラケット（2 枚タブ）の 3D モデルです。CalculiX で
-      構造解析済み。ドラッグで回転、ホイールでズーム、右上のパネルで見え方を調整できます。
-    </p>
-
-    <div
-      id="viewer"
-      data-src={modelUrl}
-      class="border-border bg-background relative w-full overflow-hidden rounded-lg border"
-      style="aspect-ratio: 16 / 10;"
-      role="img"
-      aria-label="Mac Mini マウントの 3D モデル"
-    >
-      <div
-        id="viewer-loading"
-        class="text-foreground/60 absolute inset-0 z-10 flex items-center justify-center text-sm"
-      >
-        Loading 3D model…
-      </div>
-    </div>
-
-    <p class="text-foreground/70 mt-3 text-sm">
-      Drag to rotate · scroll to zoom · right-drag to pan
-    </p>
-  </Main>
-  <Footer />
-</Layout>
+  <div
+    id="viewer-loading"
+    class="text-foreground/60 absolute inset-0 z-10 flex items-center justify-center text-sm"
+  >
+    Loading 3D model…
+  </div>
+</div>
 
 <style is:global>
-  /* Tweakpane: 長いラベル(例 "Bracket metalness")が折り返さないよう、
-     値列(--tp-blade-value-width)を既定160pxから詰めてラベル幅を確保し、
-     ラベルは nowrap（はみ出す場合のみ ellipsis）にする。 */
+  /* Tweakpane: 長いラベルが折り返さないよう値列を詰め、ラベルは nowrap。 */
   #viewer .tp-rotv {
     --tp-blade-value-width: 130px;
   }
@@ -120,8 +99,8 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.8;
 
-    // --- Tweakpane（既定で角丸・グリッド整列。CSS は style[data-tp-style] を
-    //     無ければ再注入する実装で、Pane生成を page-load 毎に行う本設計なら
+    // --- Tweakpane（既定で角丸・整列。CSSは style[data-tp-style] を無ければ
+    //     再注入する実装で、Pane生成を page-load 毎に行う本設計なら
     //     View Transitions で消えても自己修復する）---
     const guiMount = document.createElement("div");
     Object.assign(guiMount.style, {

@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/WorksLayout.astro
 title: Desk Mac Mini Mount
-description: 机下に Mac Mini を吊る VESA マウントと変換ブラケットの3Dモデル。CalculiX で構造解析。ブラウザで回転・ズーム・ライト調整ができます。
+description: 机下に Mac Mini を吊る VESA マウントと変換ブラケットの3Dモデル。CalculiX による参考構造解析つき。
 ---
 
 import ModelViewer from "@/components/ModelViewer.astro";
@@ -10,17 +10,21 @@ import contours from "@/assets/works/fem_contours.png";
 import thickness from "@/assets/works/fem_contours_thickness.png";
 import tab from "@/assets/works/fem_contours_tab.png";
 
-クラムシェル運用の Mac Mini を机裏に吊るための VESA ホルダーと、机の M8 タップ穴へ固定する変換ブラケット（2 枚タブ）です。Blender で設計し、CalculiX + gmsh で構造解析しました。ドラッグで回転、ホイールでズーム、右上のパネルで見え方（ライト・素材色・背景）を調整できます。
+机裏に Mac Mini（M1・クラムシェル運用）を吊る VESA ホルダーと、机の M8 タップ穴へ固定する変換ブラケット（2 枚タブ, A5052 t5）。Blender で設計し、書き出した GLB を three.js で表示している。
 
 <ModelViewer src="models/desk-mount.glb" ariaLabel="Mac Mini マウントの3Dモデル" />
 
-_Drag to rotate · scroll to zoom · right-drag to pan_
+- **対象**: Mac Mini M1 / VESA 100 ホルダー（市販品）→ 机 M8 タップ穴 ×4
+- **ブラケット**: 2 枚タブ方式、A5052 t5、M8 バカ穴 ×2 + M4 タップ ×2（1 枚あたり）
+- **ツール**: Blender（モデリング）/ glTF(GLB) + three.js（表示）/ CalculiX + gmsh（解析）
 
-## 構造解析（FEM）
+## 構造解析（FEM・参考）
 
-変換ブラケットを **Solid / H 肉抜き / 2 枚タブ** の 3 案で比較しました。材料は **A5052**（アルミ, E=70.3 GPa, 0.2% 耐力 195 MPa）、机への **M8 穴 ×4 を固定**、VESA の **M4 穴に下向き荷重**、要素は 2 次四面体 **C3D10**。ソルバは CalculiX(ccx)、メッシュは gmsh。
+> 参考情報。設計の裏取りとして、解析一式（メッシュ生成・CalculiX 実行・集計・作図）を Claude に作成させたもの。荷重が小さく安全率は桁で余るため、実質は形状比較が主眼。
 
-### 形状 3 案の比較（板厚 t5 / ホルダー荷重 16N 想定）
+変換ブラケットの 3 案 **Solid / H 肉抜き / 2 枚タブ** を比較。材料 A5052、机側 **M8 穴 ×4 を固定**、VESA の **M4 穴に下向き荷重**、要素は 2 次四面体 **C3D10**、ソルバ CalculiX(ccx)、メッシュ gmsh。
+
+### 形状 3 案（板厚 t5 / ホルダー荷重 16N 想定）
 
 | 形状 | 質量 [g] | 最大変位 [mm] | 最大 von Mises [MPa] | 安全率 |
 | --- | ---: | ---: | ---: | ---: |
@@ -28,11 +32,11 @@ _Drag to rotate · scroll to zoom · right-drag to pan_
 | H 肉抜き（1 枚） | 214.6 | 0.0064 | 2.86 | 68 |
 | **2 枚タブ** | **154.6** | **0.0040** | **1.69** | **116** |
 
-**2 枚タブが最軽量（−47% vs Solid）かつ最も低応力・高安全率**でした。各タブが半荷重を短い経路（2×M4 → 2×M8）で受け、中央ウェブ（＝死荷重）を除去できたためです。応力は下図のとおり **M8 固定穴の縁に集中**します（拘束点の応力集中）。
+2 枚タブが最軽量（−47% vs Solid）かつ最も低応力。各タブが半荷重を短い経路（2×M4 → 2×M8）で受け、中央ウェブ（死荷重）を除去できるため。応力は M8 固定穴の縁に集中する。
 
 <Image src={contours} alt="Solid と H 肉抜きの変位・von Mises コンター" />
 
-板厚を t3/t5/t8 で振り、実荷重の約 40 倍（**500N ≈ 51kg**）をかけて破綻を確認すると、耐力を超えるのは **t3 のみ**。t5 なら安全率 2.2 の余裕があります。
+板厚 t3/t5/t8 で振り、実荷重の約 40 倍（**500N ≈ 51kg**）で破綻を確認。耐力を超えるのは t3 のみで、t5 は安全率 2.2。
 
 <Image src={thickness} alt="板厚 t3/t5/t8 の過剰荷重(500N)コンター" />
 
@@ -42,7 +46,7 @@ _Drag to rotate · scroll to zoom · right-drag to pan_
 
 ### 解析コード
 
-結果の読み取り・評価は共通ライブラリ `femlib.py` に集約しています（`.frd` パースと von Mises）。
+読み取り・評価は共通ライブラリ `femlib.py`（`.frd` パースと von Mises）に集約。
 
 ```python
 # femlib.py — CalculiX 結果の読み取りと von Mises（抜粋）
@@ -70,7 +74,7 @@ def parse_frd(path):
     return disp, stress
 ```
 
-メッシュ生成で一番の落とし穴は、**gmsh と CalculiX で 2 次四面体の節点順が違う**こと。STL 再メッシュ時に変換が要ります。
+メッシュ生成の要注意点は、**gmsh と CalculiX で 2 次四面体の節点順が違う**こと。STL 再メッシュ時に変換する。
 
 ```python
 # build.py — gmsh tet10 を CalculiX C3D10 の節点順へ変換（抜粋）
@@ -84,4 +88,4 @@ for tag, row in zip(tags, elems.reshape(-1, 10)):
         r = [r[0], r[1], r[3], r[2], r[4], r[8], r[7], r[6], r[5], r[9]]
 ```
 
-パイプラインは `build.py`（メッシュ + 入力生成）→ `solve.py`（ccx 実行）→ `report.py`（比較表）→ `viz.py`（コンター）の薄いスクリプトに分割し、`femlib.py` / `params.py`（材料・穴座標・荷重）を共有しています。全体で gmsh 数秒 + ccx 9 ジョブ 約 80 秒（Apple Silicon）。
+構成: `build.py`（メッシュ + 入力生成）/ `solve.py`（ccx 実行）/ `report.py`（比較表）/ `viz.py`（コンター）＋ 共通の `femlib.py`・`params.py`。

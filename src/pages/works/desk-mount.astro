@@ -25,67 +25,17 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     <div
       id="viewer"
       data-src={modelUrl}
-      class="border-border relative w-full overflow-hidden rounded-lg border"
-      style="aspect-ratio: 16 / 10; background:#22262d;"
+      class="border-border bg-background relative w-full overflow-hidden rounded-lg border"
+      style="aspect-ratio: 16 / 10;"
       role="img"
       aria-label="Mac Mini マウントの 3D モデル"
     >
       <div
         id="viewer-loading"
-        class="absolute inset-0 z-10 flex items-center justify-center text-sm text-white/70"
+        class="text-foreground/60 absolute inset-0 z-10 flex items-center justify-center text-sm"
       >
         Loading 3D model…
       </div>
-
-      <details
-        id="viewer-panel"
-        class="group absolute top-2 right-2 z-20 w-64 overflow-hidden rounded-lg border border-white/15 bg-black/60 text-xs text-white/90 shadow-lg backdrop-blur select-none"
-      >
-        <summary
-          class="flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium hover:bg-white/5 focus:outline-none focus-visible:outline-none [&::-webkit-details-marker]:hidden"
-        >
-          <span>⚙ Settings</span>
-          <svg
-            class="size-3.5 text-white/45 transition-transform group-open:rotate-90"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg
-          >
-        </summary>
-        <div
-          class="flex flex-col gap-3 border-t border-white/10 p-3 [&_input]:shrink-0 [&_input[type=color]]:h-5 [&_input[type=color]]:w-8 [&_input[type=color]]:cursor-pointer [&_input[type=color]]:rounded [&_input[type=color]]:border-0 [&_input[type=color]]:bg-transparent [&_input[type=range]]:w-24 [&_input[type=range]]:accent-white [&_label]:flex [&_label]:items-center [&_label]:justify-between [&_label]:gap-2 [&_label>span]:min-w-0 [&_label>span]:truncate"
-        >
-          <section class="flex flex-col gap-1.5">
-            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
-              Light
-            </h3>
-            <label><span>Exposure</span><input type="range" id="c-exposure" min="0.2" max="3" step="0.05" value="1.1" /></label>
-            <label><span>Key light</span><input type="range" id="c-key" min="0" max="6" step="0.1" value="2.2" /></label>
-            <label><span>Ambient</span><input type="range" id="c-ambient" min="0" max="4" step="0.1" value="1.2" /></label>
-            <label><span>Reflection</span><input type="range" id="c-env" min="0" max="3" step="0.05" value="1" /></label>
-          </section>
-          <section class="flex flex-col gap-1.5">
-            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
-              Material
-            </h3>
-            <label><span>Mount color</span><input type="color" id="c-holder-color" value="#050505" /></label>
-            <label><span>Mount metalness</span><input type="range" id="c-holder-metal" min="0" max="1" step="0.02" value="1" /></label>
-            <label><span>Bracket color</span><input type="color" id="c-bracket-color" value="#8f9aa6" /></label>
-            <label><span>Bracket metalness</span><input type="range" id="c-bracket-metal" min="0" max="1" step="0.02" value="0.9" /></label>
-            <label><span>Roughness</span><input type="range" id="c-rough" min="0" max="1" step="0.02" value="0.4" /></label>
-          </section>
-          <section class="flex flex-col gap-1.5">
-            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
-              View
-            </h3>
-            <label><span>Background</span><input type="color" id="c-bg" value="#22262d" /></label>
-            <label><span>Auto-rotate</span><input type="checkbox" id="c-autorotate" class="accent-white" checked /></label>
-          </section>
-        </div>
-      </details>
     </div>
 
     <p class="text-foreground/70 mt-3 text-sm">
@@ -95,12 +45,26 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
   <Footer />
 </Layout>
 
+<style is:global>
+  /* Tweakpane: 長いラベル(例 "Bracket metalness")が折り返さないよう、
+     値列(--tp-blade-value-width)を既定160pxから詰めてラベル幅を確保し、
+     ラベルは nowrap（はみ出す場合のみ ellipsis）にする。 */
+  #viewer .tp-rotv {
+    --tp-blade-value-width: 130px;
+  }
+  #viewer .tp-lblv_l {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+</style>
+
 <script>
   // @ts-nocheck
   import * as THREE from "three";
   import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
   import { OrbitControls } from "three/addons/controls/OrbitControls.js";
   import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+  import { Pane } from "tweakpane";
 
   let cleanup = null;
 
@@ -123,6 +87,7 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
     Object.assign(renderer.domElement.style, {
       position: "absolute",
       inset: "0",
@@ -133,7 +98,12 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     el.insertBefore(renderer.domElement, el.firstChild);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#22262d");
+    // 背景はページの Light/Dark テーマ(--background)に追従
+    const readThemeBg = () =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--background")
+        .trim() || "#212737";
+    scene.background = new THREE.Color(readThemeBg());
     const camera = new THREE.PerspectiveCamera(45, 1.6, 0.001, 100);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -149,35 +119,92 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     controls.enableDamping = true;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.8;
-    renderer.domElement.addEventListener("pointerdown", () => {
-      controls.autoRotate = false;
-      const cb = document.getElementById("c-autorotate");
-      if (cb) cb.checked = false;
+
+    // --- Tweakpane（既定で角丸・グリッド整列。CSS は style[data-tp-style] を
+    //     無ければ再注入する実装で、Pane生成を page-load 毎に行う本設計なら
+    //     View Transitions で消えても自己修復する）---
+    const guiMount = document.createElement("div");
+    Object.assign(guiMount.style, {
+      position: "absolute",
+      top: "8px",
+      right: "8px",
+      width: "290px",
+      zIndex: "20",
+    });
+    el.appendChild(guiMount);
+
+    const pane = new Pane({
+      container: guiMount,
+      title: "Settings",
+      expanded: false,
     });
 
-    // --- 自作パネルの配線（apply 初期値 + input で更新）---
-    function ctl(id, apply) {
-      const inp = document.getElementById(id);
-      if (!inp) return;
-      const read = () =>
-        apply(inp.type === "checkbox" ? inp.checked : inp.value);
-      read();
-      inp.addEventListener("input", read);
-    }
-    ctl("c-exposure", v => (renderer.toneMappingExposure = +v));
-    ctl("c-key", v => (key.intensity = +v));
-    ctl("c-ambient", v => (hemi.intensity = +v));
-    ctl("c-env", v => (scene.environmentIntensity = +v));
-    ctl("c-holder-color", v => holderMat.color.set(v));
-    ctl("c-holder-metal", v => (holderMat.metalness = +v));
-    ctl("c-bracket-color", v => bracketMat.color.set(v));
-    ctl("c-bracket-metal", v => (bracketMat.metalness = +v));
-    ctl("c-rough", v => {
-      holderMat.roughness = +v;
-      bracketMat.roughness = +v;
+    const params = {
+      exposure: 1.1,
+      key: 2.2,
+      ambient: 1.2,
+      reflection: 1.0,
+      mountColor: "#050505",
+      mountMetal: 1.0,
+      bracketColor: "#8f9aa6",
+      bracketMetal: 0.9,
+      roughness: 0.4,
+      autoRotate: true,
+    };
+
+    const fLight = pane.addFolder({ title: "Light" });
+    fLight
+      .addBinding(params, "exposure", { min: 0.2, max: 3, step: 0.05, label: "Exposure" })
+      .on("change", ev => (renderer.toneMappingExposure = ev.value));
+    fLight
+      .addBinding(params, "key", { min: 0, max: 6, step: 0.1, label: "Key light" })
+      .on("change", ev => (key.intensity = ev.value));
+    fLight
+      .addBinding(params, "ambient", { min: 0, max: 4, step: 0.1, label: "Ambient" })
+      .on("change", ev => (hemi.intensity = ev.value));
+    fLight
+      .addBinding(params, "reflection", { min: 0, max: 3, step: 0.05, label: "Reflection" })
+      .on("change", ev => (scene.environmentIntensity = ev.value));
+
+    const fMat = pane.addFolder({ title: "Material" });
+    fMat
+      .addBinding(params, "mountColor", { label: "Mount color" })
+      .on("change", ev => holderMat.color.set(ev.value));
+    fMat
+      .addBinding(params, "mountMetal", { min: 0, max: 1, step: 0.02, label: "Mount metalness" })
+      .on("change", ev => (holderMat.metalness = ev.value));
+    fMat
+      .addBinding(params, "bracketColor", { label: "Bracket color" })
+      .on("change", ev => bracketMat.color.set(ev.value));
+    fMat
+      .addBinding(params, "bracketMetal", { min: 0, max: 1, step: 0.02, label: "Bracket metalness" })
+      .on("change", ev => (bracketMat.metalness = ev.value));
+    fMat
+      .addBinding(params, "roughness", { min: 0, max: 1, step: 0.02, label: "Roughness" })
+      .on("change", ev => {
+        holderMat.roughness = ev.value;
+        bracketMat.roughness = ev.value;
+      });
+
+    const fView = pane.addFolder({ title: "View" });
+    fView
+      .addBinding(params, "autoRotate", { label: "Auto-rotate" })
+      .on("change", ev => (controls.autoRotate = ev.value));
+
+    renderer.domElement.addEventListener("pointerdown", () => {
+      controls.autoRotate = false;
+      params.autoRotate = false;
+      pane.refresh();
     });
-    ctl("c-bg", v => scene.background.set(v));
-    ctl("c-autorotate", v => (controls.autoRotate = v));
+
+    // ページの Light/Dark 切替(data-theme)に背景を追従
+    const themeObserver = new MutationObserver(() =>
+      scene.background.set(readThemeBg())
+    );
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
 
     function resize() {
       const w = el.clientWidth;
@@ -233,6 +260,10 @@ const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
     cleanup = () => {
       renderer.setAnimationLoop(null);
       window.removeEventListener("resize", resize);
+      themeObserver.disconnect();
+      try {
+        pane.dispose();
+      } catch (_) {}
       try {
         controls.dispose();
       } catch (_) {}

@@ -1,0 +1,91 @@
+---
+layout: ../../layouts/WorksLayout.astro
+title: Desk Mac Mini Mount
+description: 机下に Mac Mini を吊る VESA マウントと変換ブラケットの3Dモデル。CalculiX による参考構造解析つき。
+---
+
+import ModelViewer from "@/components/ModelViewer.astro";
+import { Image } from "astro:assets";
+import contours from "@/assets/works/fem_contours.png";
+import thickness from "@/assets/works/fem_contours_thickness.png";
+import tab from "@/assets/works/fem_contours_tab.png";
+
+机裏に Mac Mini（M1・クラムシェル運用）を吊る VESA ホルダーと、机の M8 タップ穴へ固定する変換ブラケット（2 枚タブ, A5052 t5）。Blender で設計し、書き出した GLB を three.js で表示している。
+
+<ModelViewer src="models/desk-mount.glb" ariaLabel="Mac Mini マウントの3Dモデル" />
+
+- **対象**: Mac Mini M1 / VESA 100 ホルダー（市販品）→ 机 M8 タップ穴 ×4
+- **ブラケット**: 2 枚タブ方式、A5052 t5、M8 バカ穴 ×2 + M4 タップ ×2（1 枚あたり）
+- **ツール**: Blender（モデリング）/ glTF(GLB) + three.js（表示）/ CalculiX + gmsh（解析）
+
+## 構造解析（FEM・参考）
+
+> 参考情報。設計の裏取りとして、解析一式（メッシュ生成・CalculiX 実行・集計・作図）を Claude に作成させたもの。荷重が小さく安全率は桁で余るため、実質は形状比較が主眼。
+
+変換ブラケットの 3 案 **Solid / H 肉抜き / 2 枚タブ** を比較。材料 A5052、机側 **M8 穴 ×4 を固定**、VESA の **M4 穴に下向き荷重**、要素は 2 次四面体 **C3D10**、ソルバ CalculiX(ccx)、メッシュ gmsh。
+
+### 形状 3 案（板厚 t5 / ホルダー荷重 16N 想定）
+
+| 形状 | 質量 [g] | 最大変位 [mm] | 最大 von Mises [MPa] | 安全率 |
+| --- | ---: | ---: | ---: | ---: |
+| Solid（1 枚） | 292.6 | 0.0042 | 1.76 | 111 |
+| H 肉抜き（1 枚） | 214.6 | 0.0064 | 2.86 | 68 |
+| **2 枚タブ** | **154.6** | **0.0040** | **1.69** | **116** |
+
+2 枚タブが最軽量（−47% vs Solid）かつ最も低応力。各タブが半荷重を短い経路（2×M4 → 2×M8）で受け、中央ウェブ（死荷重）を除去できるため。応力は M8 固定穴の縁に集中する。
+
+<Image src={contours} alt="Solid と H 肉抜きの変位・von Mises コンター" />
+
+板厚 t3/t5/t8 で振り、実荷重の約 40 倍（**500N ≈ 51kg**）で破綻を確認。耐力を超えるのは t3 のみで、t5 は安全率 2.2。
+
+<Image src={thickness} alt="板厚 t3/t5/t8 の過剰荷重(500N)コンター" />
+
+採用案（2 枚タブ）単体のコンター（1 枚あたり半荷重 8N）：
+
+<Image src={tab} alt="2 枚タブの変位・von Mises コンター" />
+
+### 解析コード
+
+読み取り・評価は共通ライブラリ `femlib.py`（`.frd` パースと von Mises）に集約。
+
+```python
+# femlib.py — CalculiX 結果の読み取りと von Mises（抜粋）
+def von_mises(s):
+    a, b, c, d, e, f = s  # Sxx, Syy, Szz, Sxy, Syz, Szx
+    return math.sqrt(0.5 * ((a - b) ** 2 + (b - c) ** 2 + (c - a) ** 2)
+                     + 3 * (d * d + e * e + f * f))
+
+def parse_frd(path):
+    """CalculiX .frd から変位/応力を読む"""
+    disp, stress, mode = {}, {}, None
+    for line in open(path):
+        tag = line[1:3]
+        if tag == "-4":
+            nm = line[5:13].strip()
+            mode = nm if nm in ("DISP", "STRESS") else None
+        elif tag == "-3":
+            mode = None
+        elif tag == "-1" and mode:
+            n = int(line[3:13]); rest = line[13:].rstrip("\n")
+            v = [float(rest[i:i + 12]) for i in range(0, len(rest), 12)
+                 if rest[i:i + 12].strip()]
+            (disp if mode == "DISP" else stress)[n] = \
+                v[:3] if mode == "DISP" else v[:6]
+    return disp, stress
+```
+
+メッシュ生成の要注意点は、**gmsh と CalculiX で 2 次四面体の節点順が違う**こと。STL 再メッシュ時に変換する。
+
+```python
+# build.py — gmsh tet10 を CalculiX C3D10 の節点順へ変換（抜粋）
+for tag, row in zip(tags, elems.reshape(-1, 10)):
+    r = [int(x) for x in row]
+    # 末尾2エッジ節点(idx 8,9)をスワップ
+    r = [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[9], r[8]]
+    # 正のヤコビアンになるよう向き補正
+    p1, p2, p3, p4 = node[r[0]], node[r[1]], node[r[2]], node[r[3]]
+    if np.dot(np.cross(p2 - p1, p3 - p1), p4 - p1) < 0:
+        r = [r[0], r[1], r[3], r[2], r[4], r[8], r[7], r[6], r[5], r[9]]
+```
+
+構成: `build.py`（メッシュ + 入力生成）/ `solve.py`（ccx 実行）/ `report.py`（比較表）/ `viz.py`（コンター）＋ 共通の `femlib.py`・`params.py`。

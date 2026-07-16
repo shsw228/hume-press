@@ -20,6 +20,7 @@
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.2",
     "@tailwindcss/vite": "^4.3.0",
+    "@types/three": "^0.185.1",
     "astro": "^6.3.3",
     "dayjs": "^1.11.20",
     "lodash.kebabcase": "^4.1.1",
@@ -29,7 +30,9 @@
     "satori": "^0.26.0",
     "sharp": "^0.34.5",
     "slugify": "^1.6.9",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "three": "^0.185.1",
+    "tweakpane": "^4.0.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",

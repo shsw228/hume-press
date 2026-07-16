@@ -1,0 +1,261 @@
+---
+// 汎用 glTF(GLB) ビューア。three.js + Tweakpane。
+// src: BASE_URL からの相対パス (例 "models/desk-mount.glb")。
+// 1ページ1インスタンス想定 (id="viewer")。
+interface Props {
+  src: string;
+  ariaLabel?: string;
+}
+const { src, ariaLabel = "3D モデル" } = Astro.props;
+const modelUrl = import.meta.env.BASE_URL + src;
+---
+
+<div
+  id="viewer"
+  data-src={modelUrl}
+  class="border-border bg-background not-prose relative w-full overflow-hidden rounded-lg border"
+  style="aspect-ratio: 16 / 10;"
+  role="img"
+  aria-label={ariaLabel}
+>
+  <div
+    id="viewer-loading"
+    class="text-foreground/60 absolute inset-0 z-10 flex items-center justify-center text-sm"
+  >
+    Loading 3D model…
+  </div>
+</div>
+
+<style is:global>
+  /* Tweakpane: 長いラベルが折り返さないよう値列を詰め、ラベルは nowrap。 */
+  #viewer .tp-rotv {
+    --tp-blade-value-width: 130px;
+  }
+  #viewer .tp-lblv_l {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+</style>
+
+<script>
+  // @ts-nocheck
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+  import { Pane } from "tweakpane";
+
+  let cleanup = null;
+
+  function initViewer() {
+    const el = document.getElementById("viewer");
+    if (!el || el.dataset.ready) return;
+    el.dataset.ready = "1";
+
+    const holderMat = new THREE.MeshStandardMaterial({
+      color: "#050505",
+      metalness: 1.0,
+      roughness: 0.4,
+    });
+    const bracketMat = new THREE.MeshStandardMaterial({
+      color: "#8f9aa6",
+      metalness: 0.9,
+      roughness: 0.4,
+    });
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    Object.assign(renderer.domElement.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      display: "block",
+    });
+    el.insertBefore(renderer.domElement, el.firstChild);
+
+    const scene = new THREE.Scene();
+    // 背景はページの Light/Dark テーマ(--background)に追従
+    const readThemeBg = () =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--background")
+        .trim() || "#212737";
+    scene.background = new THREE.Color(readThemeBg());
+    const camera = new THREE.PerspectiveCamera(45, 1.6, 0.001, 100);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x445, 1.2);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(1, 2, 1.5);
+    scene.add(key);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
+
+    // --- Tweakpane（既定で角丸・整列。CSSは style[data-tp-style] を無ければ
+    //     再注入する実装で、Pane生成を page-load 毎に行う本設計なら
+    //     View Transitions で消えても自己修復する）---
+    const guiMount = document.createElement("div");
+    Object.assign(guiMount.style, {
+      position: "absolute",
+      top: "8px",
+      right: "8px",
+      width: "290px",
+      zIndex: "20",
+    });
+    el.appendChild(guiMount);
+
+    const pane = new Pane({
+      container: guiMount,
+      title: "Settings",
+      expanded: false,
+    });
+
+    const params = {
+      exposure: 1.1,
+      key: 2.2,
+      ambient: 1.2,
+      reflection: 1.0,
+      mountColor: "#050505",
+      mountMetal: 1.0,
+      bracketColor: "#8f9aa6",
+      bracketMetal: 0.9,
+      roughness: 0.4,
+      autoRotate: true,
+    };
+
+    const fLight = pane.addFolder({ title: "Light" });
+    fLight
+      .addBinding(params, "exposure", { min: 0.2, max: 3, step: 0.05, label: "Exposure" })
+      .on("change", ev => (renderer.toneMappingExposure = ev.value));
+    fLight
+      .addBinding(params, "key", { min: 0, max: 6, step: 0.1, label: "Key light" })
+      .on("change", ev => (key.intensity = ev.value));
+    fLight
+      .addBinding(params, "ambient", { min: 0, max: 4, step: 0.1, label: "Ambient" })
+      .on("change", ev => (hemi.intensity = ev.value));
+    fLight
+      .addBinding(params, "reflection", { min: 0, max: 3, step: 0.05, label: "Reflection" })
+      .on("change", ev => (scene.environmentIntensity = ev.value));
+
+    const fMat = pane.addFolder({ title: "Material" });
+    fMat
+      .addBinding(params, "mountColor", { label: "Mount color" })
+      .on("change", ev => holderMat.color.set(ev.value));
+    fMat
+      .addBinding(params, "mountMetal", { min: 0, max: 1, step: 0.02, label: "Mount metalness" })
+      .on("change", ev => (holderMat.metalness = ev.value));
+    fMat
+      .addBinding(params, "bracketColor", { label: "Bracket color" })
+      .on("change", ev => bracketMat.color.set(ev.value));
+    fMat
+      .addBinding(params, "bracketMetal", { min: 0, max: 1, step: 0.02, label: "Bracket metalness" })
+      .on("change", ev => (bracketMat.metalness = ev.value));
+    fMat
+      .addBinding(params, "roughness", { min: 0, max: 1, step: 0.02, label: "Roughness" })
+      .on("change", ev => {
+        holderMat.roughness = ev.value;
+        bracketMat.roughness = ev.value;
+      });
+
+    const fView = pane.addFolder({ title: "View" });
+    fView
+      .addBinding(params, "autoRotate", { label: "Auto-rotate" })
+      .on("change", ev => (controls.autoRotate = ev.value));
+
+    renderer.domElement.addEventListener("pointerdown", () => {
+      controls.autoRotate = false;
+      params.autoRotate = false;
+      pane.refresh();
+    });
+
+    // ページの Light/Dark 切替(data-theme)に背景を追従
+    const themeObserver = new MutationObserver(() =>
+      scene.background.set(readThemeBg())
+    );
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    function resize() {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    new GLTFLoader().load(
+      el.dataset.src,
+      gltf => {
+        const model = gltf.scene;
+        model.traverse(o => {
+          if (!o.isMesh) return;
+          const n = o.name || "";
+          if (/VESA|Claws|Returns/i.test(n)) o.material = holderMat;
+          else if (/Bracket|Tab/i.test(n)) o.material = bracketMat;
+        });
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        scene.add(model);
+
+        resize();
+        const radius = size.length() / 2;
+        const dist = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 1.35;
+        camera.position.copy(
+          new THREE.Vector3(0.7, 0.45, 1).normalize().multiplyScalar(dist)
+        );
+        controls.target.set(0, 0, 0);
+        controls.minDistance = radius * 0.5;
+        controls.maxDistance = radius * 8;
+        controls.update();
+
+        document.getElementById("viewer-loading")?.remove();
+      },
+      undefined,
+      () => {
+        const l = document.getElementById("viewer-loading");
+        if (l) l.textContent = "モデルの読み込みに失敗しました";
+      }
+    );
+
+    resize();
+    window.addEventListener("resize", resize);
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+
+    cleanup = () => {
+      renderer.setAnimationLoop(null);
+      window.removeEventListener("resize", resize);
+      themeObserver.disconnect();
+      try {
+        pane.dispose();
+      } catch (_) {}
+      try {
+        controls.dispose();
+      } catch (_) {}
+      try {
+        renderer.dispose();
+      } catch (_) {}
+      renderer.domElement.remove();
+      el.dataset.ready = "";
+      cleanup = null;
+    };
+  }
+
+  initViewer();
+  document.addEventListener("astro:page-load", initViewer);
+  document.addEventListener("astro:before-swap", () => cleanup && cleanup());
+</script>

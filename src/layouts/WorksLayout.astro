@@ -1,0 +1,28 @@
+---
+// Works ページ用レイアウト。MDX の frontmatter を受けて
+// 既存サイトのクローム(Layout/Header/Breadcrumb/Main)＋本文prose でラップする。
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import Main from "@/components/Main.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+
+const { frontmatter } = Astro.props;
+---
+
+<Layout
+  title={`${frontmatter.title} | ${config.site.title}`}
+  description={frontmatter.description}
+>
+  <Header />
+  <Breadcrumb />
+  <Main pageTitle={frontmatter.title}>
+    <article
+      class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg)"
+    >
+      <slot />
+    </article>
+  </Main>
+  <Footer />
+</Layout>

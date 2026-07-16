@@ -1,0 +1,251 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import Main from "@/components/Main.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+
+const modelUrl = import.meta.env.BASE_URL + "models/desk-mount.glb";
+---
+
+<Layout
+  title={`Desk Mac Mini Mount | ${config.site.title}`}
+  description="机下に Mac Mini を吊る VESA マウントと変換ブラケットの 3D モデル。ブラウザ上で回転・ズーム・ライト調整ができます。"
+>
+  <Header />
+  <Breadcrumb />
+  <Main pageTitle="Desk Mac Mini Mount">
+    <p class="mb-4">
+      クラムシェル運用の Mac Mini を机裏に吊るための VESA ホルダーと、机の M8
+      タップ穴へ固定する変換ブラケット（2 枚タブ）の 3D モデルです。CalculiX で
+      構造解析済み。ドラッグで回転、ホイールでズーム、右上のパネルで見え方を調整できます。
+    </p>
+
+    <div
+      id="viewer"
+      data-src={modelUrl}
+      class="border-border relative w-full overflow-hidden rounded-lg border"
+      style="aspect-ratio: 16 / 10; background:#22262d;"
+      role="img"
+      aria-label="Mac Mini マウントの 3D モデル"
+    >
+      <div
+        id="viewer-loading"
+        class="absolute inset-0 z-10 flex items-center justify-center text-sm text-white/70"
+      >
+        Loading 3D model…
+      </div>
+
+      <details
+        id="viewer-panel"
+        class="group absolute top-2 right-2 z-20 w-64 overflow-hidden rounded-lg border border-white/15 bg-black/60 text-xs text-white/90 shadow-lg backdrop-blur select-none"
+      >
+        <summary
+          class="flex cursor-pointer list-none items-center justify-between px-3 py-2 font-medium hover:bg-white/5 focus:outline-none focus-visible:outline-none [&::-webkit-details-marker]:hidden"
+        >
+          <span>⚙ Settings</span>
+          <svg
+            class="size-3.5 text-white/45 transition-transform group-open:rotate-90"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg
+          >
+        </summary>
+        <div
+          class="flex flex-col gap-3 border-t border-white/10 p-3 [&_input]:shrink-0 [&_input[type=color]]:h-5 [&_input[type=color]]:w-8 [&_input[type=color]]:cursor-pointer [&_input[type=color]]:rounded [&_input[type=color]]:border-0 [&_input[type=color]]:bg-transparent [&_input[type=range]]:w-24 [&_input[type=range]]:accent-white [&_label]:flex [&_label]:items-center [&_label]:justify-between [&_label]:gap-2 [&_label>span]:min-w-0 [&_label>span]:truncate"
+        >
+          <section class="flex flex-col gap-1.5">
+            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
+              Light
+            </h3>
+            <label><span>Exposure</span><input type="range" id="c-exposure" min="0.2" max="3" step="0.05" value="1.1" /></label>
+            <label><span>Key light</span><input type="range" id="c-key" min="0" max="6" step="0.1" value="2.2" /></label>
+            <label><span>Ambient</span><input type="range" id="c-ambient" min="0" max="4" step="0.1" value="1.2" /></label>
+            <label><span>Reflection</span><input type="range" id="c-env" min="0" max="3" step="0.05" value="1" /></label>
+          </section>
+          <section class="flex flex-col gap-1.5">
+            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
+              Material
+            </h3>
+            <label><span>Mount color</span><input type="color" id="c-holder-color" value="#050505" /></label>
+            <label><span>Mount metalness</span><input type="range" id="c-holder-metal" min="0" max="1" step="0.02" value="1" /></label>
+            <label><span>Bracket color</span><input type="color" id="c-bracket-color" value="#8f9aa6" /></label>
+            <label><span>Bracket metalness</span><input type="range" id="c-bracket-metal" min="0" max="1" step="0.02" value="0.9" /></label>
+            <label><span>Roughness</span><input type="range" id="c-rough" min="0" max="1" step="0.02" value="0.4" /></label>
+          </section>
+          <section class="flex flex-col gap-1.5">
+            <h3 class="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
+              View
+            </h3>
+            <label><span>Background</span><input type="color" id="c-bg" value="#22262d" /></label>
+            <label><span>Auto-rotate</span><input type="checkbox" id="c-autorotate" class="accent-white" checked /></label>
+          </section>
+        </div>
+      </details>
+    </div>
+
+    <p class="text-foreground/70 mt-3 text-sm">
+      Drag to rotate · scroll to zoom · right-drag to pan
+    </p>
+  </Main>
+  <Footer />
+</Layout>
+
+<script>
+  // @ts-nocheck
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+  let cleanup = null;
+
+  function initViewer() {
+    const el = document.getElementById("viewer");
+    if (!el || el.dataset.ready) return;
+    el.dataset.ready = "1";
+
+    const holderMat = new THREE.MeshStandardMaterial({
+      color: "#050505",
+      metalness: 1.0,
+      roughness: 0.4,
+    });
+    const bracketMat = new THREE.MeshStandardMaterial({
+      color: "#8f9aa6",
+      metalness: 0.9,
+      roughness: 0.4,
+    });
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    Object.assign(renderer.domElement.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      display: "block",
+    });
+    el.insertBefore(renderer.domElement, el.firstChild);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color("#22262d");
+    const camera = new THREE.PerspectiveCamera(45, 1.6, 0.001, 100);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x445, 1.2);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(1, 2, 1.5);
+    scene.add(key);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.8;
+    renderer.domElement.addEventListener("pointerdown", () => {
+      controls.autoRotate = false;
+      const cb = document.getElementById("c-autorotate");
+      if (cb) cb.checked = false;
+    });
+
+    // --- 自作パネルの配線（apply 初期値 + input で更新）---
+    function ctl(id, apply) {
+      const inp = document.getElementById(id);
+      if (!inp) return;
+      const read = () =>
+        apply(inp.type === "checkbox" ? inp.checked : inp.value);
+      read();
+      inp.addEventListener("input", read);
+    }
+    ctl("c-exposure", v => (renderer.toneMappingExposure = +v));
+    ctl("c-key", v => (key.intensity = +v));
+    ctl("c-ambient", v => (hemi.intensity = +v));
+    ctl("c-env", v => (scene.environmentIntensity = +v));
+    ctl("c-holder-color", v => holderMat.color.set(v));
+    ctl("c-holder-metal", v => (holderMat.metalness = +v));
+    ctl("c-bracket-color", v => bracketMat.color.set(v));
+    ctl("c-bracket-metal", v => (bracketMat.metalness = +v));
+    ctl("c-rough", v => {
+      holderMat.roughness = +v;
+      bracketMat.roughness = +v;
+    });
+    ctl("c-bg", v => scene.background.set(v));
+    ctl("c-autorotate", v => (controls.autoRotate = v));
+
+    function resize() {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    new GLTFLoader().load(
+      el.dataset.src,
+      gltf => {
+        const model = gltf.scene;
+        model.traverse(o => {
+          if (!o.isMesh) return;
+          const n = o.name || "";
+          if (/VESA|Claws|Returns/i.test(n)) o.material = holderMat;
+          else if (/Bracket|Tab/i.test(n)) o.material = bracketMat;
+        });
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        scene.add(model);
+
+        resize();
+        const radius = size.length() / 2;
+        const dist = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 1.35;
+        camera.position.copy(
+          new THREE.Vector3(0.7, 0.45, 1).normalize().multiplyScalar(dist)
+        );
+        controls.target.set(0, 0, 0);
+        controls.minDistance = radius * 0.5;
+        controls.maxDistance = radius * 8;
+        controls.update();
+
+        document.getElementById("viewer-loading")?.remove();
+      },
+      undefined,
+      () => {
+        const l = document.getElementById("viewer-loading");
+        if (l) l.textContent = "モデルの読み込みに失敗しました";
+      }
+    );
+
+    resize();
+    window.addEventListener("resize", resize);
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+
+    cleanup = () => {
+      renderer.setAnimationLoop(null);
+      window.removeEventListener("resize", resize);
+      try {
+        controls.dispose();
+      } catch (_) {}
+      try {
+        renderer.dispose();
+      } catch (_) {}
+      renderer.domElement.remove();
+      el.dataset.ready = "";
+      cleanup = null;
+    };
+  }
+
+  initViewer();
+  document.addEventListener("astro:page-load", initViewer);
+  document.addEventListener("astro:before-swap", () => cleanup && cleanup());
+</script>

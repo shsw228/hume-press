@@ -1,0 +1,45 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Breadcrumb from "@/components/Breadcrumb.astro";
+import Main from "@/components/Main.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+
+const base = import.meta.env.BASE_URL;
+
+const works = [
+  {
+    href: base + "works/desk-mount/",
+    title: "Desk Mac Mini Mount",
+    desc: "机裏に Mac Mini を吊る VESA マウント＋変換ブラケット。Blender 設計・CalculiX で構造解析。ブラウザで回せる 3D モデルつき。",
+    tag: "3D / FEM",
+  },
+];
+---
+
+<Layout
+  title={`Works | ${config.site.title}`}
+  description="制作物・3D モデリング・設計の記録。"
+>
+  <Header />
+  <Breadcrumb />
+  <Main pageTitle="Works" pageDesc="制作物・3D モデリング・設計の記録。">
+    <ul class="mt-4 flex flex-col gap-4">
+      {
+        works.map(w => (
+          <li class="border-border hover:border-accent rounded-lg border p-5 transition-colors">
+            <a href={w.href} class="block">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-accent text-lg font-semibold">{w.title}</h2>
+                <span class="text-foreground/60 shrink-0 text-xs">{w.tag}</span>
+              </div>
+              <p class="text-foreground/80 mt-2 text-sm">{w.desc}</p>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </Main>
+  <Footer />
+</Layout>

@@ -112,7 +112,7 @@ const ogImage = ogImageUrl
   >
     <h1
       style={{ viewTransitionName: slugifyStr(title.replaceAll(".", "-")) }}
-      class="text-accent inline-block text-2xl font-bold sm:text-3xl"
+      class="text-foreground inline-block text-2xl font-bold tracking-tight sm:text-3xl"
     >
       {title}
     </h1>
@@ -147,7 +147,7 @@ const ogImage = ogImageUrl
               <>
                 <a
                   href={getRelativeLocaleUrl(locale, `tags/${slugifyStr(tag)}/`)}
-                  class="hover:text-accent underline decoration-dotted underline-offset-4"
+                  class="hover:text-muted-foreground underline decoration-1 underline-offset-4"
                 >
                   {tag}
                 </a>

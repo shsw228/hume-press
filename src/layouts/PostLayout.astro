@@ -16,6 +16,12 @@ const { site } = config;
 const { title, description, ogImage, canonicalURL, pubDatetime, modDatetime } =
   Astro.props;
 
+// AI-readable twin: same path with a `.md` suffix (see `[...slug].md.ts`).
+const markdownURL = new URL(
+  Astro.url.pathname.replace(/\/$/, "") + ".md",
+  Astro.site
+).href;
+
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -37,6 +43,10 @@ const structuredData = {
   <Fragment slot="head">
     <!-- Override og:type for article pages -->
     <meta property="og:type" content="article" />
+
+    <!-- Raw Markdown twin for LLMs / agents -->
+    <link rel="alternate" type="text/markdown" href={markdownURL} />
+
 
     {
       pubDatetime && (

@@ -1,0 +1,165 @@
+---
+// 一覧カード用の軽量 3D サムネ。three.js で GLB を自動回転表示するだけ。
+// GUI・OrbitControls なし。canvas は pointer-events:none なので、親の <a>
+// がクリックを受ける（＝カードのリンク遷移を邪魔しない）。複数インスタンス可。
+interface Props {
+  src: string;
+  ariaLabel?: string;
+}
+const { src, ariaLabel = "3D モデル" } = Astro.props;
+const modelUrl = import.meta.env.BASE_URL + src;
+---
+
+<div
+  class="absolute inset-0"
+  data-model-thumb
+  data-src={modelUrl}
+  role="img"
+  aria-label={ariaLabel}
+>
+  <span
+    class="model-thumb-loading text-muted-foreground absolute inset-0 z-10 flex items-center justify-center text-xs"
+  >
+    Loading 3D…
+  </span>
+</div>
+
+<script>
+  // @ts-nocheck
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+  const cleanups: Array<() => void> = [];
+
+  function initThumb(el) {
+    if (!el || el.dataset.ready) return;
+    el.dataset.ready = "1";
+
+    // alpha:true で背景透過 → カードの bg-muted がそのまま透け、Light/Dark に追従。
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    Object.assign(renderer.domElement.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      display: "block",
+      pointerEvents: "none",
+    });
+    el.insertBefore(renderer.domElement, el.firstChild);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1.6, 0.001, 100);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 1.2);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    key.position.set(1, 2, 1.5);
+    scene.add(key);
+
+    const holderMat = new THREE.MeshStandardMaterial({
+      color: "#050505",
+      metalness: 1.0,
+      roughness: 0.4,
+    });
+    const bracketMat = new THREE.MeshStandardMaterial({
+      color: "#8f9aa6",
+      metalness: 0.9,
+      roughness: 0.4,
+    });
+
+    const pivot = new THREE.Group();
+    scene.add(pivot);
+
+    function resize() {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    new GLTFLoader().load(
+      el.dataset.src,
+      gltf => {
+        const model = gltf.scene;
+        model.traverse(o => {
+          if (!o.isMesh) return;
+          const n = o.name || "";
+          if (/VESA|Claws|Returns/i.test(n)) o.material = holderMat;
+          else if (/Bracket|Tab/i.test(n)) o.material = bracketMat;
+        });
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        pivot.add(model);
+
+        resize();
+        const radius = size.length() / 2;
+        const dist = (radius / Math.sin((camera.fov * Math.PI) / 360)) * 1.12;
+        camera.position.copy(
+          new THREE.Vector3(0.7, 0.45, 1).normalize().multiplyScalar(dist)
+        );
+        camera.lookAt(0, 0, 0);
+
+        el.querySelector(".model-thumb-loading")?.remove();
+      },
+      undefined,
+      () => {
+        const l = el.querySelector(".model-thumb-loading");
+        if (l) l.textContent = "3D の読み込みに失敗しました";
+      }
+    );
+
+    resize();
+    window.addEventListener("resize", resize);
+
+    // 画面外では描画を止める（省電力）。
+    let visible = true;
+    const io = new IntersectionObserver(
+      entries => (visible = entries[0].isIntersecting),
+      { threshold: 0.01 }
+    );
+    io.observe(el);
+
+    const clock = new THREE.Clock();
+    renderer.setAnimationLoop(() => {
+      const dt = clock.getDelta();
+      if (!visible) return;
+      pivot.rotation.y += dt * 0.35;
+      renderer.render(scene, camera);
+    });
+
+    cleanups.push(() => {
+      renderer.setAnimationLoop(null);
+      window.removeEventListener("resize", resize);
+      io.disconnect();
+      try {
+        renderer.dispose();
+      } catch (_) {}
+      renderer.domElement.remove();
+      el.dataset.ready = "";
+    });
+  }
+
+  function initAll() {
+    document
+      .querySelectorAll("[data-model-thumb]")
+      .forEach(el => initThumb(el));
+  }
+  function cleanupAll() {
+    while (cleanups.length) cleanups.pop()!();
+  }
+
+  initAll();
+  document.addEventListener("astro:page-load", initAll);
+  document.addEventListener("astro:before-swap", cleanupAll);
+</script>

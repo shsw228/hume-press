@@ -6,7 +6,7 @@ import Header from "@/components/Header.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
-import Card from "@/components/Card.astro";
+import PostRow from "@/components/PostRow.astro";
 import { postFilter } from "@/utils/postFilter";
 import { getPostsByGroupCondition } from "./_utils/getPostsByGroupCondition";
 import { useTranslations } from "@/i18n";
@@ -42,7 +42,7 @@ const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long" });
         .sort(([yearA], [yearB]) => Number(yearB) - Number(yearA))
         .map(([year, yearGroup]) => (
           <div>
-            <span class="text-2xl font-bold">{year}</span>
+            <span class="text-2xl font-bold tracking-tight">{year}</span>
             <sup class="text-muted-foreground text-sm">{yearGroup.length}</sup>
             {Object.entries(
               getPostsByGroupCondition(
@@ -52,8 +52,8 @@ const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long" });
             )
               .sort(([monthA], [monthB]) => Number(monthB) - Number(monthA))
               .map(([month, monthGroup]) => (
-                <div class="flex flex-col sm:flex-row">
-                  <div class="mt-6 min-w-36 text-lg sm:my-6">
+                <div class="mt-6 flex flex-col gap-1 sm:flex-row sm:gap-0">
+                  <div class="min-w-36 text-lg sm:pt-3.5">
                     <span class="font-bold">
                       {monthFormatter.format(
                         new Date(2000, Number(month) - 1, 1)
@@ -75,7 +75,7 @@ const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long" });
                           )
                       )
                       .map(data => (
-                        <Card {...data} />
+                        <PostRow showDesc heading="h3" {...data} />
                       ))}
                   </ul>
                 </div>

@@ -7,15 +7,16 @@ import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Socials from "@/components/Socials.astro";
-import Card from "@/components/Card.astro";
+import PostRow from "@/components/PostRow.astro";
 import LinkButton from "@/components/LinkButton.astro";
+import Tag from "@/components/Tag.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
+import { getUniqueTags } from "@/utils/getUniqueTags";
 import { postFilter } from "@/utils/postFilter";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
-const { socials, posts: postsConfig } = config;
+const { site, socials, posts: postsConfig } = config;
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
@@ -25,6 +26,35 @@ const sortedPosts = getSortedPosts(posts);
 const featuredPosts = sortedPosts.filter(({ data }) => data.featured);
 const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
 const homePath = getRelativeLocaleUrl(locale, "");
+
+// Light stats for the rail: total posts and the year the blog started.
+const totalPosts = sortedPosts.length;
+const sinceYear = sortedPosts.length
+  ? Math.min(...sortedPosts.map(p => p.data.pubDatetime.getFullYear()))
+  : new Date().getFullYear();
+
+// Top topics (most-used tags) as quick entry points into /tags.
+const topTags = getUniqueTags(posts)
+  .sort((a, b) => b.count - a.count || a.tagName.localeCompare(b.tagName))
+  .slice(0, 6);
+
+// Prettify social names for the rail pills (fall back to a capitalised name).
+const socialLabels: Record<string, string> = {
+  github: "GitHub",
+  x: "X",
+  twitter: "X",
+  mail: "Mail",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+  telegram: "Telegram",
+};
+const socialLabel = (name: string) =>
+  socialLabels[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
+
+const pillClass =
+  "border-border text-muted-foreground hover:text-foreground hover:border-foreground inline-flex items-center gap-1 rounded-full border px-3.5 py-1.5 text-sm transition-[color,border-color] active:scale-[0.97]";
+const labelClass =
+  "text-muted-foreground mb-1 ml-3.5 text-xs font-semibold tracking-wide uppercase";
 ---
 
 <Layout>
@@ -33,80 +63,88 @@ const homePath = getRelativeLocaleUrl(locale, "");
     id="main-content"
     data-layout="index"
     data-home-path={homePath}
-    class="app-layout"
+    class="shell grid grid-cols-1 items-start gap-10 pt-10 pb-14 lg:grid-cols-[240px_1fr] lg:gap-16 lg:pt-16"
   >
-    <section id="hero" class="border-border border-b pt-8 pb-6">
-      <h1 class="my-4 inline-block text-4xl font-bold sm:my-8 sm:text-5xl">
-        hume.com
+    <aside class="lg:sticky lg:top-20 lg:self-start">
+      <h1 class="text-2xl font-semibold tracking-tight sm:text-[1.7rem]">
+        {site.title}
       </h1>
-      <a
-        target="_blank"
-        href={getAssetPath("rss.xml")}
-        class="inline-block"
-        aria-label="RSS Feed"
-        title="RSS Feed"
-      >
-        <IconRss
-          width={20}
-          height={20}
-          class="stroke-accent scale-125 stroke-3 rtl:-rotate-90"
-        />
-        <span class="sr-only">RSS Feed</span>
-      </a>
-
-      <p>
-        iOS / オーディオ / ハードウェアまわりを書き散らかす個人ブログ。Walkman の MTP 解析、ヘッドフォン選び、Xcode の小ネタなど、自分の手元で確かめた話を残していきます。
+      <p class="text-muted-foreground mt-3 max-w-[24ch] text-[0.95rem]">
+        {site.description}
       </p>
+      <p class="text-muted-foreground mt-2 text-sm tabular-nums">
+        {totalPosts} posts · since {sinceYear}
+      </p>
+      <div class="mt-5 flex flex-wrap gap-2">
+        {
+          socials.map(({ name, url }) => (
+            <a href={url} target="_blank" rel="noopener noreferrer" class={pillClass}>
+              {socialLabel(name)}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ))
+        }
+        <a
+          href={getAssetPath("rss.xml")}
+          target="_blank"
+          class={pillClass}
+          aria-label="RSS Feed"
+        >
+          <IconRss width={14} height={14} class="stroke-current rtl:-rotate-90" />
+          RSS
+        </a>
+      </div>
+
       {
-        socials.length > 0 && (
-          <div class="mt-4 flex max-sm:flex-col sm:items-center">
-            <div class="me-2 mb-1 whitespace-nowrap sm:mb-0">
-              {t.home.socialLinks}:
-            </div>
-            <Socials />
+        topTags.length > 0 && (
+          <div class="mt-7">
+            <p class="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
+              Topics
+            </p>
+            <ul class="flex flex-wrap gap-2">
+              {topTags.map(({ tag, tagName }) => (
+                <Tag {tag} {tagName} size="sm" />
+              ))}
+            </ul>
           </div>
         )
       }
-    </section>
+    </aside>
 
-    {
-      featuredPosts.length > 0 && (
-        <section
-          id="featured"
-          class:list={[
-            "pt-12 pb-6",
-            { "border-border border-b": recentPosts.length > 0 },
-          ]}
-        >
-          <h2 class="text-2xl font-semibold tracking-wide">
-            {t.home.featured}
-          </h2>
-          <ul>
-            {featuredPosts.map(data => (
-              <Card variant="h3" {...data} />
-            ))}
-          </ul>
-        </section>
-      )
-    }
+    <div>
+      {
+        featuredPosts.length > 0 && (
+          <section id="featured">
+            <p class={labelClass}>{t.home.featured}</p>
+            <ul>
+              {featuredPosts.map(data => (
+                <PostRow showDesc {...data} />
+              ))}
+            </ul>
+          </section>
+        )
+      }
 
-    {
-      recentPosts.length > 0 && (
-        <section id="recent-posts" class="pt-12 pb-6">
-          <h2 class="text-2xl font-semibold tracking-wide">
-            {t.home.recentPosts}
-          </h2>
-          <ul>
-            {recentPosts.slice(0, postsConfig.perIndex).map(data => (
-              <Card variant="h3" {...data} />
-            ))}
-          </ul>
-        </section>
-      )
-    }
+      {
+        recentPosts.length > 0 && (
+          <section
+            id="recent-posts"
+            class:list={[{ "mt-10": featuredPosts.length > 0 }]}
+          >
+            <p class={labelClass}>{t.home.recentPosts}</p>
+            <ul>
+              {recentPosts.slice(0, postsConfig.perIndex).map(data => (
+                <PostRow {...data} />
+              ))}
+            </ul>
+          </section>
+        )
+      }
 
-    <div class="my-8 text-center">
-      <LinkButton href={getRelativeLocaleUrl(locale, "posts")}>
+      <LinkButton
+        href={getRelativeLocaleUrl(locale, "posts")}
+        class="text-accent mt-8 ml-3.5 inline-flex items-center gap-1 font-medium hover:gap-2"
+      >
         {t.home.allPosts}
         <IconArrowRight class="inline-block rtl:-rotate-180" />
       </LinkButton>

@@ -4,6 +4,7 @@ import Header from "@/components/Header.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
+import ModelThumb from "@/components/ModelThumb.astro";
 import config from "@/config";
 
 const base = import.meta.env.BASE_URL;
@@ -14,6 +15,7 @@ const works = [
     title: "Desk Mac Mini Mount",
     desc: "机裏に Mac Mini を吊る VESA マウント＋変換ブラケット。Blender 設計・CalculiX で構造解析。ブラウザで回せる 3D モデルつき。",
     tag: "3D / FEM",
+    model: "models/desk-mount.glb",
   },
 ];
 ---
@@ -25,16 +27,28 @@ const works = [
   <Header />
   <Breadcrumb />
   <Main pageTitle="Works" pageDesc="制作物・3D モデリング・設計の記録。">
-    <ul class="mt-4 flex flex-col gap-4">
+    <ul class="mt-4 grid gap-5 sm:grid-cols-2">
       {
         works.map(w => (
-          <li class="border-border hover:border-accent rounded-lg border p-5 transition-colors">
-            <a href={w.href} class="block">
-              <div class="flex items-center justify-between gap-3">
-                <h2 class="text-accent text-lg font-semibold">{w.title}</h2>
-                <span class="text-foreground/60 shrink-0 text-xs">{w.tag}</span>
+          <li>
+            <a
+              href={w.href}
+              class="group border-border bg-surface hover:card-shadow block overflow-hidden rounded-2xl border transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5"
+            >
+              <div class="bg-muted relative aspect-[16/10] overflow-hidden">
+                <ModelThumb src={w.model} ariaLabel={`${w.title} の3Dモデル`} />
               </div>
-              <p class="text-foreground/80 mt-2 text-sm">{w.desc}</p>
+              <div class="p-5">
+                <div class="flex items-center justify-between gap-3">
+                  <h2 class="text-foreground text-lg font-semibold tracking-tight">
+                    {w.title}
+                  </h2>
+                  <span class="border-border text-muted-foreground shrink-0 rounded-full border px-2.5 py-0.5 text-xs">
+                    {w.tag}
+                  </span>
+                </div>
+                <p class="text-muted-foreground mt-2 text-sm">{w.desc}</p>
+              </div>
             </a>
           </li>
         ))

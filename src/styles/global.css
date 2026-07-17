@@ -25,15 +25,30 @@
 }
 
 @utility app-layout {
-  @apply max-w-app mx-auto w-full px-4;
+  @apply max-w-app mx-auto w-full px-4 sm:px-6;
+}
+
+/* Wide shell for the site chrome (header/footer) and the homepage grid. */
+@utility max-w-shell {
+  @apply max-w-[70rem];
+}
+
+@utility shell {
+  @apply max-w-shell mx-auto w-full px-4 sm:px-6 lg:px-10;
 }
 
 @utility active-nav {
-  @apply underline decoration-wavy decoration-2 underline-offset-8;
+  @apply text-foreground font-medium;
+}
+
+/* Apple-style floating list rows: a soft shadow that lifts on hover. */
+@utility card-shadow {
+  box-shadow: var(--shadow);
 }
 
 :target {
-  scroll-margin-block: 1rem;
+  /* Top offset clears the sticky header; bottom keeps a little breathing room. */
+  scroll-margin-block: 5rem 1rem;
 }
 
 /* remark-link-card */

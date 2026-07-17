@@ -1,0 +1,68 @@
+---
+import type { CollectionEntry } from "astro:content";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { getPostUrl } from "@/utils/getPostPaths";
+import { slugifyStr } from "@/utils/slugify";
+import config from "@/config";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+type Props = {
+  showDesc?: boolean;
+  /** Render the title as a heading (listing pages) or a plain span (home). */
+  heading?: "h2" | "h3" | "span";
+} & CollectionEntry<"posts">;
+
+const {
+  id,
+  data,
+  filePath,
+  showDesc = false,
+  heading = "span",
+} = Astro.props;
+const { title, description, pubDatetime, modDatetime, timezone: postTimezone } =
+  data;
+
+const Title = heading;
+
+const isModified = modDatetime && modDatetime > pubDatetime;
+const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(
+  postTimezone ?? config.site.timezone
+);
+---
+
+<li>
+  <a
+    href={getPostUrl(id, filePath, Astro.currentLocale)}
+    class="group hover:bg-surface hover:card-shadow grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 rounded-xl px-3.5 py-3.5 transition-[background-color,box-shadow,transform] duration-200 active:scale-[0.997] sm:grid-cols-[7rem_1fr_auto]"
+  >
+    <time
+      datetime={datetime.toISOString()}
+      class="text-muted-foreground order-first col-span-full font-mono text-sm tabular-nums sm:order-none sm:col-span-1 sm:pt-0.5"
+    >
+      {datetime.format("YYYY-MM-DD")}
+    </time>
+    <div class="min-w-0">
+      <Title
+        transition:name={slugifyStr(title.replaceAll(".", "-"))}
+        class="text-[1.05rem] font-medium tracking-[-0.014em]"
+      >
+        {title}
+      </Title>
+      {
+        showDesc && description && (
+          <p class="text-muted-foreground mt-0.5 text-sm">{description}</p>
+        )
+      }
+    </div>
+    <span
+      aria-hidden="true"
+      class="text-muted-foreground translate-x-[-4px] self-center text-lg opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100 max-sm:hidden rtl:rotate-180"
+    >
+      ›
+    </span>
+  </a>
+</li>

@@ -1,34 +1,51 @@
 /* Register design tokens for Tailwind v4 */
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --font-app: var(--font-google-sans-code);
+  /* Body / UI uses the platform system font (SF on Apple devices); code stays
+     monospace via the preloaded Google Sans Code face. */
+  --font-app: var(--font-sans);
+  --font-mono: var(--font-google-sans-code);
 }
 
-/* Light theme values */
+:root {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    system-ui, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Hiragino Sans",
+    "Noto Sans JP", Meiryo, sans-serif;
+}
+
+/* Light theme values (Apple neutral) */
 :root,
 [data-theme="light"] {
-  --background: #fdfdfd;
-  --foreground: #282728;
-  --accent: #006cac;
+  --background: #fbfbfd;
+  --surface: #ffffff;
+  --foreground: #1d1d1f;
+  --accent: #0071e3;
   --accent-foreground: #ffffff;
-  --muted: #e6e6e6;
-  --muted-foreground: #6b7280;
-  --border: #ece9e9;
+  --muted: #f5f5f7;
+  --muted-foreground: #6e6e73;
+  --border: #d2d2d7;
+  --shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.05);
 }
 
-/* Dark theme values */
+/* Dark theme values (Apple neutral — soft charcoal, not pure black) */
 [data-theme="dark"] {
-  --background: #212737;
-  --foreground: #eaedf3;
-  --accent: #ff6b01;
+  --background: #1c1c1e;
+  --surface: #2c2c2e;
+  --foreground: #f5f5f7;
+  --accent: #2997ff;
   --accent-foreground: #ffffff;
-  --muted: #343f60;
-  --muted-foreground: #afb9ca;
-  --border: #ab4b08;
+  --muted: #2c2c2e;
+  --muted-foreground: #98989d;
+  --border: rgba(255, 255, 255, 0.12);
+  --shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.55);
 }

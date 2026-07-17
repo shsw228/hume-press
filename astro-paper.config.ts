@@ -4,7 +4,8 @@ export default defineAstroPaperConfig({
   site: {
     url: "https://shsw228.github.io/hume.com/",
     title: "hume.com",
-    description: "shsw228 のテックブログ。Walkman 解析、iOS 開発、オーディオまわりの覚え書き。",
+    description:
+      "日常のことや開発まわりのメモを雑多に書き残す、shsw228 の個人 Web ページ。",
     author: "shsw228",
     profile: "https://github.com/shsw228",
     ogImage: "default-og.jpg",
